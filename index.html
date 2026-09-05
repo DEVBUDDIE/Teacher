@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><audio id="bgMusic" src="your-song.mp3" preload="auto" loop></audio>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Happy Teacher's Day</title>
+    <style>
+       
+        :root {
+            --bg-color: #f2f7fb;
+            --card-bg: #ffffff;
+            --text-color: #004085;
+            --accent-blue: #007aff;
+            --shadow-color: rgba(0, 122, 255, 0.15);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+           
+            min-height: 100dvh;
+            background-color: var(--bg-color);
+            background-image: radial-gradient(circle at top left, #ffffff, #e6f0ff);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+             font-family: 'Comic Sans MS', 'Chalkboard SE', 'Baloo 2', 'Nunito', sans-serif;
+            overflow: hidden;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            cursor: pointer;
+            color: var(--text-color);
+        }
+
+       
+        #loader {
+            position: fixed;
+            inset: 0;
+            background: var(--card-bg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            transition: opacity 0.4s ease, transform 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+        }
+
+        .fill-text {
+            font-size: 3rem;
+            font-weight: bold;
+            color: #dbe9f4; 
+            position: relative;
+        }
+
+        
+        .fill-text::before {
+            content: attr(data-text);
+            position: absolute;
+            left: 0;
+            top: 0;
+            color: var(--accent-blue);
+            width: 0%;
+            overflow: hidden;
+            white-space: nowrap;
+            animation: fillTextAnim 1.5s ease-in-out forwards;
+        }
+
+        @keyframes fillTextAnim {
+            0% { width: 0%; }
+            100% { width: 100%; }
+        }
+
+       
+        .main-card {
+            width: 90%;
+            max-width: 400px;
+            min-height: 250px;
+            background: var(--card-bg);
+            border-radius: 24px;
+                      box-shadow: 0 10px 30px var(--shadow-color),
+                        0 2px 10px rgba(0, 0, 0, 0.05);
+            border: 2px solid #e0efff;
+            padding: 35px 25px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            position: relative;
+            opacity: 0;
+            transform: scale(0.9);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .main-card.visible {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .main-card:active {
+            transform: scale(0.96); 
+        }
+
+       
+        .text-container {
+            font-size: 1.4rem;
+            font-weight: 600;
+            line-height: 1.6;
+            width: 100%;
+            word-wrap: break-word;
+        }
+
+        
+        .word-wrapper {
+            display: inline-block; 
+        }
+
+       
+        .char {
+            display: inline-block;
+            opacity: 0;
+            transform: translateY(-15px); 
+            animation: popIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+
+        @keyframes popIn {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        
+        .cursor {
+            display: inline-block;
+            width: 3px;
+            height: 1.2rem;
+            background-color: var(--accent-blue);
+            vertical-align: middle;
+            margin-left: 5px;
+            animation: blink 0.8s infinite;
+            border-radius: 3px;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        
+        .helper-prompt {
+            position: fixed;
+            bottom: 30px;
+            color: #7997b5;
+            font-size: 0.9rem;
+            font-weight: bold;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            animation: pulse-prompt 2s infinite ease-in-out;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+
+        .helper-prompt.visible {
+            opacity: 1;
+        }
+
+        @keyframes pulse-prompt {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); color: var(--accent-blue); }
+        }
+    </style>
+</head>
+<body>
+
+   
+    <div id="loader">
+        <div class="fill-text" data-text="Happy day">Happy day</div>
+    </div>
+
+   
+    <div class="main-card" id="card">
+        <div class="text-container" id="typewriter"></div>
+        <span class="cursor" id="cursor"></span>
+    </div>
+
+    
+    <div class="helper-prompt" id="prompt">Tap anywhere to continue</div>
+
+    <script>
+               const storySteps = [
+            "Sabse pehle to Happy Teacher's Day 💐",
+            "Namaste Manish Ji 🙏",
+            "Pandey Ji 🙏",
+            "Sorry wo kya hai na, surname zaroori hota hai wahi toh identity hai 🏷️",
+            "Jaise Albert Einstein ka Einstein, lalender Modi ka Modi... Hehe maaf karna jada hogya 😂",
+            "Let’s see how well we know our teacher… 🎬"
+        ];
+
+        let currentStepId = 1; 
+        let isAnimating = false;
+        const container = document.getElementById('typewriter');
+
+       
+        function getHumanSpeed() {
+            return Math.floor(Math.random() * 50) + 25; 
+        }
+
+        
+        function typeEngine(text, callback) {
+            isAnimating = true;
+            container.innerHTML = '';
+            
+            const words = text.split(' ');
+            let wIndex = 0;
+            let cIndex = 0;
+            let currentWordSpan = null;
+
+            function typeNextChar() {
+                if (wIndex >= words.length) {
+                    isAnimating = false;
+                    if (callback) callback();
+                    return;
+                }
+
+               
+                if (cIndex === 0) {
+                    currentWordSpan = document.createElement('span');
+                    currentWordSpan.className = 'word-wrapper';
+                    container.appendChild(currentWordSpan);
+                }
+
+                const chars = Array.from(words[wIndex]);
+
+                if (cIndex < chars.length) {
+                  
+                    const charSpan = document.createElement('span');
+                    charSpan.textContent = chars[cIndex];
+                    charSpan.className = 'char';
+                    currentWordSpan.appendChild(charSpan);
+                    
+                    cIndex++;
+                    setTimeout(typeNextChar, getHumanSpeed());
+                } else {
+                   
+                    if (wIndex < words.length - 1) {
+                        const space = document.createElement('span');
+                        space.innerHTML = '&nbsp;';
+                        container.appendChild(space);
+                    }
+                    wIndex++;
+                    cIndex = 0;
+                    setTimeout(typeNextChar, 40); 
+                }
+            }
+            typeNextChar();
+        }
+
+                function backspaceEngine(charCount, callback) {
+            isAnimating = true;
+            let deleted = 0;
+
+            function removeNextChar() {
+                if (deleted < charCount) {
+                    const lastNode = container.lastChild;
+                    if (!lastNode) {
+                        isAnimating = false;
+                        if(callback) callback();
+                        return;
+                    }
+
+                   
+                    if (lastNode.innerHTML === '&nbsp;' || lastNode.nodeType === Node.TEXT_NODE) {
+                        container.removeChild(lastNode);
+                        deleted++;
+                    } 
+                    
+                    else if (lastNode.classList && lastNode.classList.contains('word-wrapper')) {
+                        if (lastNode.childNodes.length > 0) {
+                            lastNode.removeChild(lastNode.lastChild);
+                            deleted++;
+                        }
+                        
+                        if (lastNode.childNodes.length === 0) {
+                            container.removeChild(lastNode);
+                        }
+                    }
+                    
+                    setTimeout(removeNextChar, 30);
+                } else {
+                    isAnimating = false;
+                    if (callback) callback();
+                }
+            }
+            removeNextChar();
+        }
+
+      
+        function appendEngine(text, callback) {
+            isAnimating = true;
+            
+            const words = text.split(' ');
+            let wIndex = 0;
+            let cIndex = 0;
+            let currentWordSpan = null;
+
+            
+            const space = document.createElement('span');
+            space.innerHTML = '&nbsp;';
+            container.appendChild(space);
+
+            function typeNextChar() {
+                if (wIndex >= words.length) {
+                    isAnimating = false;
+                    if (callback) callback();
+                    return;
+                }
+
+                if (cIndex === 0) {
+                    currentWordSpan = document.createElement('span');
+                    currentWordSpan.className = 'word-wrapper';
+                    container.appendChild(currentWordSpan);
+                }
+
+                const chars = Array.from(words[wIndex]); 
+
+                if (cIndex < chars.length) {
+                    const charSpan = document.createElement('span');
+                    charSpan.textContent = chars[cIndex];
+                    charSpan.className = 'char';
+                    currentWordSpan.appendChild(charSpan);
+                    
+                    cIndex++;
+                    setTimeout(typeNextChar, getHumanSpeed());
+                } else {
+                    if (wIndex < words.length - 1) {
+                        const space = document.createElement('span');
+                        space.innerHTML = '&nbsp;';
+                        container.appendChild(space);
+                    }
+                    wIndex++;
+                    cIndex = 0;
+                    setTimeout(typeNextChar, 40);
+                }
+            }
+            typeNextChar();
+        }
+
+
+       
+       let isMusicPlaying = false;
+        function handleScreenTap() {
+            const bgMusic = document.getElementById('bgMusic');
+            
+           
+            if (bgMusic && !isMusicPlaying) {
+                isMusicPlaying = true;
+                fadeInAudio(bgMusic, 600);
+            }
+
+            if (isAnimating) return; 
+
+            switch (currentStepId) {
+                case 1:
+                    typeEngine(storySteps[1]);
+                    currentStepId++;
+                    break;
+
+                case 2:
+                    const stringToDelete = " Ji 🙏";
+                    const charsToRemoveCount = Array.from(stringToDelete).length;
+                    backspaceEngine(charsToRemoveCount, () => {
+                        appendEngine("Pandey Ji 🙏", null);
+                    });
+                    currentStepId++;
+                    break;
+
+                case 3:
+                    typeEngine(storySteps[3]);
+                    currentStepId++;
+                    break;
+
+                case 4:
+                    typeEngine(storySteps[4]);
+                    currentStepId++;
+                    break;
+
+                case 5:
+                    typeEngine(storySteps[5]);
+                    currentStepId++;
+                    break;
+
+                case 6:
+                    
+                    if (bgMusic) {
+                        localStorage.setItem('audioTime', bgMusic.currentTime);
+                        localStorage.setItem('isPlaying', 'true');
+                    }
+                    fadeOutAudio(bgMusic, 600, () => {
+                        window.location.href = "inter.html";
+                    });
+                    break;
+            }
+        }
+       
+     window.addEventListener('load', () => {
+          
+            setTimeout(() => {
+                const loader = document.getElementById('loader');
+                const mainCard = document.getElementById('card');
+                const prompt = document.getElementById('prompt');
+                const bgMusic = document.getElementById('bgMusic'); // Audio Element
+
+                loader.style.opacity = '0';
+                loader.style.transform = 'translateY(-20px) scale(0.9)'; 
+                
+                setTimeout(() => {
+                    loader.style.display = 'none';
+                    mainCard.classList.add('visible'); 
+                    prompt.classList.add('visible');  
+                    
+                    // 🎵 Music Fade-In start with 0.6 seconds (600ms) transition
+                    fadeInAudio(bgMusic, 600);
+                    
+                    setTimeout(() => {
+                        typeEngine(storySteps[0]);
+                    }, 300);
+
+                }, 500); 
+                
+            }, 1800);
+        });
+
+       
+        document.body.addEventListener('click', handleScreenTap);
+        document.body.addEventListener('touchstart', (e) => {}, { passive: true });
+
+       
+        function fadeInAudio(audioElement, duration = 600) {
+            audioElement.volume = 0;
+            audioElement.play().catch(e => console.log("Audio autoplay restricted:", e));
+            
+            let startTime = performance.now();
+            
+            function updateFade(currentTime) {
+                let elapsed = currentTime - startTime;
+                let progress = elapsed / duration;
+                
+                if (progress < 1) {
+                    audioElement.volume = progress;
+                    requestAnimationFrame(updateFade);
+                } else {
+                    audioElement.volume = 1;
+                }
+            }
+            requestAnimationFrame(updateFade);
+        }
+
+       
+        function fadeOutAudio(audioElement, duration = 600, callback) {
+            let startTime = performance.now();
+            let startVolume = audioElement.volume;
+            
+            function updateFade(currentTime) {
+                let elapsed = currentTime - startTime;
+                let progress = elapsed / duration;
+                
+                if (progress < 1) {
+                    audioElement.volume = startVolume * (1 - progress);
+                    requestAnimationFrame(updateFade);
+                } else {
+                    audioElement.volume = 0;
+                    audioElement.pause();
+                    if (callback) callback();
+                }
+            }
+            requestAnimationFrame(updateFade);
+        }
+    </script>
+</body>
+</html>
